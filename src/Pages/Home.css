@@ -1,0 +1,15 @@
+.Logo{
+    min-width: 30vw;
+    width: auto;
+    max-height: 50vh;
+    height: auto;
+    margin: 0 auto;
+    display: flex;
+}
+.MainDiv{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5vh;
+}
