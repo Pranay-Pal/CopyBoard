@@ -37,7 +37,7 @@ function LoginRegister() {
 
     // Example API call
     try {
-      const url = isLogin ? `${DOMAIN}user/login` : `${DOMAIN}user/register`;
+      const url = isLogin ? `${DOMAIN}/api/user/login` : `${DOMAIN}/api/user/register`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

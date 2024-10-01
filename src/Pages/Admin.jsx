@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import DOMAIN from '../Domain.jsx';
-
+import './Admin.css'
 const Admin = () => {
     const [dbs, setDbs] = useState(null);
     console.log(DOMAIN)
@@ -26,7 +26,7 @@ const Admin = () => {
     }, []);
 
     return (
-        <div>
+        <div className='mainbox'>
             <h1>Admin</h1>
             <p>DATABASE STATUS: {dbs ? dbs.status : 'Loading...'}</p>
         </div>
