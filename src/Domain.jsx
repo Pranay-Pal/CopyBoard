@@ -1,6 +1,2 @@
-var DOMAIN = "http://localhost:8080";
-const PROD = import.meta.env.PROD == false ? false : true;
-if (PROD != false) {
-  DOMAIN = import.meta.env.DOMAIN;
-}
+var DOMAIN = import.meta.env.VITE_DOMAIN || "http://localhost:8080";
 export default DOMAIN;

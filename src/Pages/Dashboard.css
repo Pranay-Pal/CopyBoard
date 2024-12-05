@@ -1,19 +1,230 @@
-/* Styles for the dashboard */
-body {
-  margin: 0; /* Remove default body margin */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* .dashboardbox{
+  display: flex;
+  flex-direction: column;
+  padding: 0px;
+  margin: 0px;
+  border: 0px;
+  width: 100vw;
+  height: 100vh;
+}
+.topbar{
+  height:auto;
+  min-height: 8vh;
+  max-height: 20vw;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #000000;
+  border-bottom: 2px solid #000000;
+  padding: 0px;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+.Logo-tile{
+  height: 50px;
+  width:50px;
+  border: #000000 solid 1px;
+  margin: 5px;
+}
+.logout-button{
+  background-color: #cacaca;
+  color: rgb(0, 0, 0);
+  border: 1px solid #000000;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 1rem;
+  margin: 5px;
+  justify-content: space-between;
+  align-items: center;
+  height: fit-content;
+}
+.mainwindow{
+  flex-grow: 2;
+  width: 100%;
+  display: flex;
+  flex-direction: row; 
+}
+.leftbar
+{
+  width: 30%;
+  height: 100%;
+  border: #000000 solid 1px;
+  flex-grow: 1;
+  flex-shrink: 1;
+  display: flex;
+  flex-direction: column;
+  
+}
+.collections{
+  height: 100%;
+  width: 100%;
+  border: 0px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.collectionheader{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+}
+.collectionunderline{
+  border: 1px solid #000000;
+  width: 90%;
+  height: 2px;
+  background-color: #7c7c7c;
+}
+.collection-tiles{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 30%;
+  border: 0px;
+  overflow-y: scroll;
+  
+}
+.Tile{
+  width: 70%;
+  height: 60px;
+  border: #000000 solid 2px;
+}
+.new-collection-div
+{
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+  width: 100%;
+  height: 15%;
+  border: 0px;
+}
+.collectionbutton{
+  background-color: #cacaca;
+  color: rgb(0, 0, 0);
+  border: 1px solid #000000;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 1rem;
+  margin: 5px;
+}
+.Newcollectioninput{
+  width: 80%;
+  padding: 0.3rem;
+  margin-top: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+.rightsection{
+
+  height: 100%;
+  border: #000000 solid 1px;
+  flex-grow: 2;
+}
+ */
+
+
+
+
+
+
+
+
+
+/* body {
+  margin: 0;
   font-family: Arial, sans-serif;
 }
 
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Full height of the viewport */
-  overflow: hidden; /* Prevent overflow */
+  height: 100vh;
+  overflow: hidden;
 }
 
 .dashboard-header {
   background-color: #f8f8f8;
-  padding: 1rem 2rem; /* Horizontal padding */
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -32,25 +243,24 @@ body {
   padding: 0.5rem 1rem;
   cursor: pointer;
   border-radius: 5px;
-  font-size: 1rem; /* Ensure good size for readability */
+  font-size: 1rem;
 }
 
 .dashboard-content {
   display: flex;
   flex: 1;
-  overflow: hidden; /* Prevent content overflow */
+  overflow: hidden;
 }
 
 .sidebar {
-  width: 250px; /* Fixed width for sidebar */
+  width: 250px;
   background-color: #eaeaea;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-y: auto;
 }
-
 .collection-item {
   display: flex;
   justify-content: space-between;
@@ -66,7 +276,7 @@ body {
   cursor: pointer;
   text-align: left;
   transition: background-color 0.2s ease;
-  font-size: 1rem; /* Set button text size */
+  font-size: 1rem;
 }
 
 .collection-button:hover {
@@ -74,7 +284,7 @@ body {
 }
 
 .collection-button.active {
-  background-color: #c0c0ff; /* Active collection highlighted */
+  background-color: #c0c0ff;
 }
 
 .delete-collection-button {
@@ -84,7 +294,7 @@ body {
   padding: 0.5rem;
   cursor: pointer;
   margin-left: 0.5rem;
-  font-size: 1rem; /* Set button text size */
+  font-size: 1rem;
 }
 
 .new-collection-input {
@@ -93,7 +303,7 @@ body {
   margin-top: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 1rem; /* Set input text size */
+  font-size: 1rem;
 }
 
 .new-collection-button {
@@ -105,23 +315,23 @@ body {
   margin-top: 0.5rem;
   width: 100%;
   border-radius: 4px;
-  font-size: 1rem; /* Set button text size */
+  font-size: 1rem;
 }
 
 .main-content {
   flex: 1;
   padding: 1rem;
   display: flex;
-  flex-direction: column; /* Column layout for main content */
-  overflow-y: auto; /* Allow vertical scrolling */
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .key-value-pairs {
-  display: flex; /* Set display to flex */
-  flex-direction: column; /* Ensure key-value pairs stack vertically */
+  display: flex;
+  flex-direction: column;
   margin: 1rem 0;
-  flex: 1; /* Take remaining space */
-  overflow-y: auto; /* Allow vertical scrolling for key-value pairs */
+  flex: 1;
+  overflow-y: auto;
 }
 
 .key-value-pair {
@@ -132,11 +342,11 @@ body {
 
 .key-value-pair input {
   margin-right: 0.5rem;
-  flex: 1; /* Allow inputs to grow */
+  flex: 1;
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 1rem; /* Set input text size */
+  font-size: 1rem;
 }
 
 .add-key-value-form {
@@ -151,43 +361,42 @@ body {
   padding: 0.5rem;
   cursor: pointer;
   border-radius: 4px;
-  font-size: 1rem; /* Set button text size */
+  font-size: 1rem;
 }
 
 .key-value-pair button {
-  margin-left: 0.5rem; /* Add spacing between buttons */
+  margin-left: 0.5rem;
 }
 
 .key-value-pair .add-key-value-button {
-  margin-left: auto; /* Push the button to the right */
+  margin-left: auto;
 }
-
 
 @media (max-width: 600px) {
   .sidebar {
-    width: 100%; /* Full width sidebar on small screens */
-    padding: 0.5rem; /* Reduce padding */
+    width: 100%;
+    padding: 0.5rem;
   }
 
   .dashboard-content {
-    flex-direction: column; /* Stack content vertically on small screens */
+    flex-direction: column;
   }
 
   .collection-item {
-    flex-direction: column; /* Stack buttons on small screens */
+    flex-direction: column;
   }
 
   .collection-button {
-    margin-bottom: 0.5rem; /* Spacing between buttons */
+    margin-bottom: 0.5rem;
   }
 }
 
 @media (min-width: 600px) and (max-width: 900px) {
   .sidebar {
-    width: 200px; /* Adjust width for medium screens */
+    width: 200px;
   }
 
   .collection-button {
-    font-size: 0.9rem; /* Slightly smaller font for medium screens */
+    font-size: 0.9rem;
   }
-}
+} */
