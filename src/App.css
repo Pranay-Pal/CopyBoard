@@ -284,6 +284,29 @@ div{
   border:#000000 solid 1px;
   margin: 5px;
 }
+.collection-tile-selected
+{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  height: 10%;
+  padding: 0px;
+  margin: 0px;
+  border: 0px;
+  align-items: center;
+  border:#ffffff solid 1px;
+  background-color: #252525;
+  margin: 5px;
+}
+.collection-tile-text{
+  font-size: 1rem;
+  color: #000000;
+}
+.collection-tile-selected-text{
+  font-size: 1rem;
+  color: #ffffff;
+}
 .add-collection
 {
   height: 15%;
@@ -292,6 +315,40 @@ div{
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.add-collection-input
+{
+  width: 60%;
+  height: fit-content;
+  margin: 0px;
+  border: 1px solid #000000;
+  border-radius: 3px;
+  font-size: 1rem;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+.add-collection-check-btn
+{
+  border: #000000 solid 1px;
+  border-radius: 3px;
+  font-size: 1rem;
+  color: #ffffff;
+  background-color: #252525;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  margin-left: 8px;
+}
+.add-collection-btn
+{
+  border: #000000 solid 0px;
+  border-radius: 5px;
+  font-size: 1rem;
+  color: #ffffff;
+  background-color: #252525;
+  padding: 0.5rem;
 }
 
 
@@ -323,7 +380,6 @@ div{
   border: 0px;
   justify-content: space-around;
   align-items: center;
-  background-color: #28a745;
 }
 
 .collection-details-name-view-container
@@ -331,13 +387,12 @@ div{
   display: flex;
   height: 90%;
   width: 90%;
-  background-color: #007bff;
   align-items: end;
   justify-content: start;
 }
 .collection-name
 {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   align-items: end;
   justify-content: end;
   padding: 0px;
@@ -345,14 +400,98 @@ div{
   margin-right: 20px;
   margin-left: 10px;
   border: 0px;
+  align-items: end;
 }
 .collection-details-name-input-container
 {
   display: flex;
   height: 90%;
   width: 90%;
-  background-color: #007bff;
   align-items: end;
   justify-content: start;
-  
+}
+.collection-edit-btn{
+  border: #000000 solid 1px;
+  border-radius: 3px;
+  font-size: 1rem;
+  color: #ffffff;
+  background-color: #252525;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  margin-left: 8px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.collection-delete-btn{
+  border: #000000 solid 1px;
+  border-radius: 3px;
+  font-size: 1rem;
+  color: #ffffff;
+  background-color: #252525;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  margin-left: 8px;
+  margin-bottom: 2px;
+}
+.collection-share-btn{
+  border: #000000 solid 1px;
+  border-radius: 3px;
+  font-size: 1rem;
+  color: #ffffff;
+  background-color: #252525;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  margin-left: 8px;
+  margin-bottom: 2px;
+}
+.collection-name-input{
+  width: 60%;
+  height: fit-content;
+  margin: 0px;
+  border: 1px solid #000000;
+  border-radius: 3px;
+  font-size: 1.1rem;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+.collection-save-btn{
+  border: #000000 solid 1px;
+  border-radius: 3px;
+  font-size: 1rem;
+  color: #ffffff;
+  background-color: #252525;
+  padding: 0.1rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+
+.collection-details-data{
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  height: 70%;
+  padding: 0px;
+  margin: 0px;
+  border: 0px;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y:scroll;
+}
+
+.key-value-item{
+  width: 90%;
+  height: 10%;
+  margin-top: 2px;
+  margin-bottom: 3px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #757575;
 }

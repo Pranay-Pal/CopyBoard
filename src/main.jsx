@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  Children,
+} from "react";
 import axios from "axios";
-import { useCookies, CookiesProvider } from "react-cookie";
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -11,13 +16,88 @@ import {
   useParams,
 } from "react-router-dom";
 import CBLogo from "./assets/copyboard_full.png";
-import DOMAIN from "./Domain.jsx";
-import { MdOutlineLogout, MdOutlinePublicOff, MdPublic } from "react-icons/md";
+import {
+  MdOutlineLogout,
+  MdOutlinePublic,
+  MdOutlinePublicOff,
+  MdOutlineLink,
+  MdPublic,
+} from "react-icons/md";
 import { BsCollection } from "react-icons/bs";
-import { FaCopy, FaTrash, FaEdit, FaPlus, FaCheck } from "react-icons/fa";
+import {
+  FaCopy,
+  FaTrash,
+  FaEdit,
+  FaPlus,
+  FaCheck,
+  FaFileCode,
+} from "react-icons/fa";
+import Highlight from "react-highlight";
+import "./dracula.css";
+
 import COPYBOARD from "./assets/COPYBOARD.png";
 import "./App.css";
 
+const AuthContext = createContext(null);
+
+const AuthProvider = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check auth status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get(`${DOMAIN}/api/user/check-auth`, {
+          withCredentials: true,
+        });
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const login = async (username, password) => {
+    try {
+      await axios.post(
+        `${DOMAIN}/api/user/login`,
+        { username, password },
+        { withCredentials: true }
+      );
+      setIsAuthenticated(true);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await axios.post(
+        `${DOMAIN}/api/user/logout`,
+        {},
+        { withCredentials: true }
+      );
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+const useAuth = () => useContext(AuthContext);
+
+const DOMAIN = import.meta.env.VITE_DOMAIN;
 const Home = () => {
   const navigate = useNavigate();
   return (
@@ -35,7 +115,8 @@ const Home = () => {
 };
 
 function LoginRegister() {
-  const [isLogin, setIsLogin] = useState(true); // Toggle state for Login/Register
+  const { isAuthenticated, login } = useAuth();
+  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -59,45 +140,33 @@ function LoginRegister() {
       return handlePopup("Please fill in all required fields", true);
     }
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      return handlePopup("Passwords do not match", true);
-    }
-
-    // Example API call
     try {
-      const url = isLogin
-        ? `${DOMAIN}/api/user/login`
-        : `${DOMAIN}/api/user/register`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: formData.username,
-          password: formData.password,
-        }),
-        credentials: "include", // This allows cookies to be sent/received
-      });
-      console.log(response);
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "An error occurred");
-      }
-
-      // On successful login, redirect to dashboard
       if (isLogin) {
-        handlePopup("Login successful!", false);
-        setTimeout(() => navigate("/dashboard"), 1000);
-      }
-      // On successful registration, switch to login and show success message
-      else {
+        // Use the login function from AuthContext
+        const success = await login(formData.username, formData.password);
+        if (success) {
+          handlePopup("Login successful!", false);
+          setTimeout(() => navigate("/dashboard"), 1000);
+        } else {
+          handlePopup("Invalid credentials", true);
+        }
+      } else {
+        const response = await axios({
+          method: "POST",
+          url: `${DOMAIN}/api/user/register`,
+          data: {
+            username: formData.username,
+            password: formData.password,
+          },
+          withCredentials: true,
+        });
         handlePopup("Registration successful! Please login.", false);
         setTimeout(() => setIsLogin(true), 1000);
       }
 
       setFormData({ username: "", password: "", confirmPassword: "" });
     } catch (error) {
-      handlePopup(error.message, true);
+      handlePopup(error.response?.data?.message || "An error occurred", true);
     }
   };
 
@@ -177,25 +246,58 @@ function LoginRegister() {
 }
 
 const PublicPage = () => {
-  const { id } =useParams();
-  return (<p>{id}</p>)
-}
-
-const Admin = () => {
-  const [dbs, setDbs] = useState(null);
-  console.log(DOMAIN);
+  const { id } = useParams();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("Fetching data from:", `${DOMAIN}/api/dbstat`); // Log the URL
+        const response = await axios.get(`${DOMAIN}/api/page/publicshared/${id}`);
+        console.log('Fetched shared collection data:', response.data);
+        setData(response.data);
+      } catch (err) {
+        console.error('Error fetching shared collection:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!data) return <div>No data found</div>;
+
+  return (
+    <div className="public-page">
+      <h1>{data.colname}</h1>
+      <div className="shared-data">
+        {data.coldata.map((item, index) => (
+          <div key={index} className="data-item">
+            <h3>{item.key}</h3>
+            <p>{item.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const Admin = () => {
+  const [dbs, setDbs] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
         const response = await fetch(`${DOMAIN}/api/dbstat`);
-        console.log("Response:", response); // Log the response object
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Data:", data); // Log the data
         setDbs(data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -214,6 +316,7 @@ const Admin = () => {
 };
 
 function Dashboard() {
+  const navigate = useNavigate(); // Add this at the start of Dashboard component
   //----------------------------------------------------------------
   //states
   const [data, setData] = useState(null);
@@ -222,7 +325,6 @@ function Dashboard() {
 
   //_______________________________________________________________________________________
   // Topbar && Topbar functions
-  const [cookies, setCookie, removeCookie] = useCookies(["connect.sid"]);
 
   const LogOut = async () => {
     try {
@@ -231,7 +333,6 @@ function Dashboard() {
         {},
         { withCredentials: true }
       );
-      removeCookie("connect.sid", { path: "/" });
       navigate("/login");
     } catch (error) {
       console.error("Error logging out:", error);
@@ -257,13 +358,27 @@ function Dashboard() {
   // Mainsection functions
 
   const CollectionTile = ({ col }) => {
-    console.log("Collection: ", col);
     async function collectionclick() {
       setSelectedCollection(col.colname);
     }
     return (
-      <button className="collection-tile" onClick={collectionclick}>
-        <p className="collection-tile-text">{col.colname}</p>
+      <button
+        className={
+          selectedCollection == col.colname
+            ? "collection-tile-selected"
+            : "collection-tile"
+        }
+        onClick={collectionclick}
+      >
+        <p
+          className={
+            selectedCollection == col.colname
+              ? "collection-tile-selected-text"
+              : "collection-tile-text"
+          }
+        >
+          {col.colname}
+        </p>
       </button>
     );
   };
@@ -280,13 +395,10 @@ function Dashboard() {
             <hr className="collections-divider" />
           </div>
           <div className="collections-list">
-            {console.log(data)}
             {data?.coll?.map((col, index) => (
               <CollectionTile key={index} col={col} />
             )) || (
-              <p className="no-collections-message">
-                No Collections are found{console.log(data)}
-              </p>
+              <p className="no-collections-message">No Collections are found</p>
             )}
           </div>
           <AddColection />
@@ -299,6 +411,14 @@ function Dashboard() {
     const [isEditing, setIsEditing] = useState(false);
     const [newCollectionName, setNewCollectionName] =
       useState(selectedCollection);
+    const [shared, setShared] = useState(false);
+    const [shareId, setShareId] = useState(null);
+    useEffect(() => {
+      const collection = data?.coll?.find(
+        (item) => item.colname === selectedCollection
+      );
+      setShared(collection?.share ?? false);
+    }, [selectedCollection, data]);
 
     const handleEditClick = () => {
       setIsEditing(true);
@@ -313,7 +433,31 @@ function Dashboard() {
       setIsEditing(false);
     };
 
-    console.log(data);
+    const handleShareToggle = async () => {
+      try {
+        const response = await axios.post(
+          `${DOMAIN}/api/data/collection/${selectedCollection}/share`,
+          { share: !shared },
+          { withCredentials: true }
+        );
+
+        setShared(!shared);
+        if (response.data.id) {
+          const shareUrl = `${window.location.origin}/page/${response.data.id}`;
+          navigator.clipboard
+            .writeText(shareUrl)
+            .then(() => {
+              console.log('URL copied to clipboard:', shareUrl);
+            })
+            .catch((err) => console.error("Failed to copy text:", err));
+        }
+        
+        setShareId(response.data.id || null);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     return (
       <div className="dashboard-content">
         {selectedCollection ? (
@@ -339,7 +483,9 @@ function Dashboard() {
             ) : (
               <div className="collection-details-name">
                 <div className="collection-details-name-view-container">
-                  <p className="collection-name"><b>{selectedCollection}</b></p>
+                  <p className="collection-name">
+                    <b>{selectedCollection}</b>
+                  </p>
                   <button
                     className="collection-edit-btn"
                     onClick={handleEditClick}
@@ -355,22 +501,43 @@ function Dashboard() {
                   >
                     <FaTrash />
                   </button>
+                  {shared ? (
+                    <button
+                      className="collection-share-btn"
+                      onClick={handleShareToggle}
+                    >
+                      <MdOutlinePublicOff />
+                    </button>
+                  ) : (
+                    <button
+                      className="collection-share-btn"
+                      onClick={handleShareToggle}
+                    >
+                      <MdOutlinePublic />
+                    </button>
+                  )}
                 </div>
                 <hr className="collections-divider" />
               </div>
             )}
-
-            {data?.coll
-              ?.find((item) => item.colname === selectedCollection)
-              ?.coldata?.map((item, index) => (
-                <KeyValueDisp
-                  key={item._id}
-                  keyProp={item.key}
-                  value={item.value}
-                  index={index}
-                  collName={selectedCollection}
-                />
-              )) || console.log(data)}
+            <div className="collection-details-data">
+              {data?.coll
+                ?.find((item) => item.colname === selectedCollection)
+                ?.coldata?.map((item, index) => (
+                  <KeyValueDisp
+                    key={item._id}
+                    keyProp={item.key}
+                    value={item.value}
+                    code={item.code}
+                    index={index}
+                    collName={selectedCollection}
+                  />
+                )) || (
+                <p className="collection-nodataincollection">
+                  No value is stored in this collection.
+                </p>
+              )}
+            </div>
             <AddKey collName={selectedCollection} />
           </div>
         ) : (
@@ -440,11 +607,11 @@ function Dashboard() {
     }
   };
   //// --> KVP (Key Value Pair)
-  const AddKVP = async (collName, key, value) => {
+  const AddKVP = async (collName, key, value, code) => {
     try {
       const response = await axios.post(
         encodeURI(`${DOMAIN}/api/data/collection/${collName}/key`),
-        { key, value },
+        { key, value, code },
         { withCredentials: true }
       );
       setData(response.data);
@@ -452,15 +619,15 @@ function Dashboard() {
       console.log(err);
     }
   };
-  const UpdateKVP = async (collName, key, value) => {
+  const UpdateKVP = async (collName, key, newKey, value, code) => {
     try {
-    } catch (err) {
       const response = await axios.put(
         encodeURI(`${DOMAIN}/api/data/collection/${collName}/key/${key}`),
-        { newValue: value },
+        { newKey, newValue: value, code },
         { withCredentials: true }
       );
       setData(response.data);
+    } catch (err) {
       console.log(err);
     }
   };
@@ -514,13 +681,14 @@ function Dashboard() {
     );
   };
 
-  const KeyValueDisp = ({ collName, keyProp, value }) => {
+  const KeyValueDisp = ({ collName, keyProp, value, code }) => {
     const [edit, setEdit] = useState(false);
     const [newKey, setNewKey] = useState(keyProp);
     const [newValue, setNewValue] = useState(value);
+    const [isCode, setIsCode] = useState(code);
 
     const handleSave = async () => {
-      await UpdateKVP(collName, newKey, newValue);
+      await UpdateKVP(collName, keyProp, newKey, newValue, isCode);
       setEdit(false);
     };
 
@@ -533,47 +701,57 @@ function Dashboard() {
           value={newKey}
           onChange={(e) => setNewKey(e.target.value)}
         />
-        <div className="value-container">
-          <input
-            type="text"
-            className="value-input"
-            placeholder="Value"
-            value={newValue}
-            onChange={(e) => setNewValue(e.target.value)}
-          />
+        <div className="value-n-btns-containers">
+          <div className="value-container">
+            <input
+              type="text"
+              className="value-input"
+              placeholder="Value"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+            />
+            <button className="code-btn" onClick={() => setIsCode(!isCode)}>
+              <FaFileCode color={isCode ? "white" : "black"} />
+            </button>
+            <button className="save-kvp-btn" onClick={handleSave}>
+              <FaCheck />
+            </button>
+          </div>
         </div>
-        <button className="save-kvp-btn" onClick={handleSave}>
-          <FaCheck />
-        </button>
       </div>
     ) : (
       <div className="key-value-item">
         <div className="key-container">
           <p>{keyProp}</p>
         </div>
-        <div className="value-container">
-          <p>{value}</p>
+        <div className="value-n-btns-containers">
+          {isCode ? (
+            <Highlight>{value}</Highlight>
+          ) : (
+            <div className="value-container">
+              <p>{value}</p>
+            </div>
+          )}
+          <button
+            className="copy-value-btn"
+            onClick={() =>
+              navigator.clipboard
+                .writeText(value)
+                .catch((err) => console.error("Failed to copy text:", err))
+            }
+          >
+            <FaCopy />
+          </button>
+          <button className="edit-kvp-btn" onClick={() => setEdit(true)}>
+            <FaEdit />
+          </button>
+          <button
+            className="delete-kvp-btn"
+            onClick={() => RemoveKVP(collName, keyProp)}
+          >
+            <FaTrash />
+          </button>
         </div>
-        <button
-          className="copy-value-btn"
-          onClick={() =>
-            navigator.clipboard
-              .writeText(value)
-              .then(() => console.log("Text copied to clipboard"))
-              .catch((err) => console.error("Failed to copy text:", err))
-          }
-        >
-          <FaCopy />
-        </button>
-        <button className="edit-kvp-btn" onClick={() => setEdit(true)}>
-          <FaEdit />
-        </button>
-        <button
-          className="delete-kvp-btn"
-          onClick={() => RemoveKVP(collName, keyProp)}
-        >
-          <FaTrash />
-        </button>
       </div>
     );
   };
@@ -582,6 +760,7 @@ function Dashboard() {
     const [edit, setEdit] = useState(false);
     const [newKey, setNewKey] = useState("");
     const [newValue, setNewValue] = useState("");
+    const [isCode, setIsCode] = useState(false);
     return edit ? (
       <div className="addkey">
         <input
@@ -598,9 +777,17 @@ function Dashboard() {
         />
         <button
           onClick={async () => {
-            AddKVP(collName, newKey, newValue);
+            setIsCode(!isCode);
+          }}
+        >
+          <FaFileCode color={isCode == true ? "black" : "white"} />
+        </button>
+        <button
+          onClick={async () => {
+            AddKVP(collName, newKey, newValue, isCode);
             setNewKey("");
             setNewValue("");
+            setIsCode(false);
             setEdit(!edit);
           }}
         >
@@ -631,12 +818,11 @@ function Dashboard() {
 }
 
 function App() {
-  const [cookies] = useCookies(["connect.sid"]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, isLoading } = useContext(AuthContext);
 
-  useEffect(() => {
-    setIsAuthenticated(!!cookies["connect.sid"]);
-  }, [cookies]);
+  if (isLoading) {
+    return <div>Loading...</div>; // Add proper loading component
+  }
 
   return (
     <Routes>
@@ -644,8 +830,13 @@ function App() {
         path="/"
         element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
       />
-      <Route path="/page/:id" element={<PublicPage/>} />
-      <Route path="/login" element={<LoginRegister />} />
+      <Route path="/page/:id" element={<PublicPage />} />
+      <Route
+        path="/login"
+        element={
+          isAuthenticated ? <Navigate to="/dashboard" /> : <LoginRegister />
+        }
+      />
       <Route path="/admin" element={<Admin />} />
       <Route
         path="/dashboard"
@@ -657,10 +848,10 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <CookiesProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <App />
-      </BrowserRouter>
-    </CookiesProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

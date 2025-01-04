@@ -7,11 +7,12 @@ import cors from "cors";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
+import MongoStore from 'connect-mongo'
 dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-if (process.env.PROD != "false") {
+if (process.env.PROD == "false") {
   app.use(
     cors({
       origin: "http://localhost:5173",
@@ -38,17 +39,44 @@ const Schema = mongoose.Schema;
 const valuesSchema = new Schema({
   key: { type: String, required: true, unique: true },
   value: { type: String, required: true },
-  code: {type:Boolean, required: true, default: false}
+  code: {type:Boolean, required: true, default: false},
+  lang: {type:String, required: true, default:"auto"}
 });
 const collectionsSchema = new Schema({
-  colname: { type: String, required: true, unique: true },
-  share: { type: Boolean, required: true, default: false },
+  colname: { 
+    type: String, 
+    required: true,
+    unique: true,
+    validate: {
+      validator: function(v) {
+        return v != null && v.trim().length > 0;
+      },
+      message: 'Collection name cannot be null or empty'
+    }
+  },
+  share: { 
+    type: Boolean, 
+    required: true, 
+    default: false 
+  },
   coldata: [valuesSchema],
+}, {
+  timestamps: true
 });
+collectionsSchema.index({ 'colname': 1, 'coldata.key':1 }, { unique: true });
 const DataSchema = new Schema({
-  username: { type: String, required: true, unique: true, ref: "User" },
+  username: { 
+    type: String, 
+    required: true,
+    ref: "User" 
+  },
   coll: [collectionsSchema],
+}, {
+  timestamps: true
 });
+
+DataSchema.index({ 'username': 1, 'coll.colname': 1 }, { unique: true });
+
 const PublicCollectionsSchema = new Schema({
   username: { type: String, required: true, unique: true },
   colname: { type: String, required: true, unique: true },
@@ -57,6 +85,7 @@ const PublicCollectionsSchema = new Schema({
 const UserSchema = new Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  usertype: { type: String, required: true, unique: true, default: "user"}
 });
 const User = mongoose.model("User", UserSchema);
 const Data = mongoose.model("Data", DataSchema);
@@ -71,6 +100,9 @@ function isAuthenticated(req, res, next) {
   return res.status(401).json({ message: "Unauthorized access" });
 }
 UserRouter.post("/register", async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -78,27 +110,36 @@ UserRouter.post("/register", async (req, res) => {
         .status(400)
         .json({ message: "Username and password are required" });
     }
-    console.log("Username:", username);
-    console.log("Password:", password);
-    const userExists = await User.findOne({ username });
+
+    const userExists = await User.findOne({ username }).session(session);
     if (userExists) {
+      await session.abortTransaction();
       return res.status(400).json({ message: "User already exists" });
     }
+
     const salt = await bcrypt.genSalt(10);
-    console.log("Salt:", salt);
     const hashedPassword = await bcrypt.hash(password, salt);
-    console.log("Hashed Password:", hashedPassword);
+
     const newUser = new User({
       username,
       password: hashedPassword,
     });
-    const newData = new Data({ username, coll: [] });
-    await newUser.save();
-    await newData.save();
+
+    const newData = new Data({ 
+      username, 
+      coll: [] 
+    });
+    await newUser.save({ session });
+    await newData.save({ session });
+    await session.commitTransaction();
     res.status(201).json({ message: "User registered successfully" });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    await session.abortTransaction();
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Registration failed" });
+  } finally {
+    session.endSession();
   }
 });
 UserRouter.post("/login", async (req, res) => {
@@ -124,6 +165,42 @@ UserRouter.post("/logout", (req, res) => {
     return res.status(200).json({ message: "Logged out successfully" });
   });
 });
+
+
+UserRouter.get("/check-auth", async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({
+        isAuthenticated: false
+      });
+    }
+
+    const user = await User.findById(req.session.userId).select('-password');
+    
+    if (!user) {
+      req.session.destroy();
+      return res.status(401).json({
+        isAuthenticated: false
+      });
+    }
+
+    return res.status(200).json({
+      isAuthenticated: true,
+      user: {
+        username: user.username,
+        usertype: user.usertype
+      }
+    });
+
+  } catch (error) {
+    console.error("Auth check error:", error);
+    return res.status(500).json({
+      isAuthenticated: false,
+      message: "Internal server error"
+    });
+  }
+});
+
 DataRouter.get("/", isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
@@ -224,7 +301,7 @@ DataRouter.post(
       if (!userId || !username) {
         return res.status(401).json({ message: "Unauthorized access" });
       }
-      const { key, value } = req.body;
+      const { key, value, code } = req.body;
       if (!key || !value) {
         return res.status(400).json({ message: "Insufficient data" });
       }
@@ -236,7 +313,11 @@ DataRouter.post(
       if (!coll) {
         return res.status(404).json({ message: "Collection not found" });
       }
-      coll.coldata.push({ key, value });
+      coll.coldata.push({ 
+        key, 
+        value,
+        code: Boolean(code)
+      });
       await data.save();
       res.status(201).json(data);
     } catch (error) {
@@ -304,25 +385,48 @@ DataRouter.put(
   isAuthenticated,
   async (req, res) => {
     try {
-      const { newValue } = req.body;
+      const { newKey, newValue, code } = req.body;
       const userId = req.session.userId;
       const username = req.session.username;
+      
       if (!userId || !username) {
         return res.status(401).json({ message: "Unauthorized access" });
       }
+      
       const data = await Data.findOne({ username });
       if (!data) {
         return res.status(404).json({ message: "Data not found" });
       }
+      
       const coll = data.coll.find((col) => col.colname === req.params.colname);
       if (!coll) {
         return res.status(404).json({ message: "Collection not found" });
       }
+
+      if (newKey && newKey !== req.params.key) {
+        const keyExists = coll.coldata.some(kv => kv.key === newKey);
+        if (keyExists) {
+          return res.status(400).json({ message: "Key already exists in collection" });
+        }
+      }
+
       const keyValue = coll.coldata.find((kv) => kv.key === req.params.key);
       if (!keyValue) {
         return res.status(404).json({ message: "Key not found" });
       }
-      keyValue.value = newValue;
+
+      if (newKey && newKey !== req.params.key) {
+        keyValue.key = newKey;
+      }
+      
+      if (newValue !== undefined) {
+        keyValue.value = newValue;
+      }
+
+      if (code !== undefined) {
+        keyValue.code = Boolean(code);
+      }
+      
       await data.save();
       res.status(200).json(data);
     } catch (error) {
@@ -330,6 +434,7 @@ DataRouter.put(
     }
   }
 );
+
 DataRouter.delete(
   "/collection/:colname/key/:key",
   isAuthenticated,
@@ -362,25 +467,18 @@ DataRouter.delete(
 );
 PageRouter.get("/publicshared/:id", async (req, res) => {
   try {
-    // Find the public collection using the `id` from PublicCollectionsSchema
     const publicCollection = await PCS.findOne({ id: req.params.id });
     if (!publicCollection) {
       return res.status(404).json({ message: "Public collection not found" });
     }
-
-    // Find the corresponding collection in the user's data
     const data = await Data.findOne({ username: publicCollection.username });
     if (!data) {
       return res.status(404).json({ message: "Data not found" });
     }
-
-    // Find the collection in the user's data
     const coll = data.coll.find((col) => col.colname === publicCollection.colname);
     if (!coll) {
       return res.status(404).json({ message: "Collection not found in user's data" });
     }
-
-    // Return the collection data
     res.status(200).json(coll);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -399,8 +497,18 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
-    cookie: { maxAge: 3 * 24 * 60 * 60 * 1000, httpOnly: false },
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.PROD == "false" ? process.env.MONGODB_URI_DEV : process.env.MONGODB_URI,
+      ttl: 3 * 24 * 60 * 60,
+      autoRemove: 'native',
+    }),
+    cookie: { 
+      maxAge: 3 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.PROD != "false",
+      sameSite: 'strict'
+    }
   })
 );
 app.use("/api/user", UserRouter);
@@ -410,4 +518,5 @@ app.get("*", (req, res, next) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server is running in port ${PORT}`));
+const date = new Date();
+app.listen(PORT, () => console.log(`http://localhost:8080/ \nServer is running in port ${PORT} at ${date.toString()}`));
